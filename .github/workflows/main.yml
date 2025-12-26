@@ -14,7 +14,7 @@ READY
 */
 
 const Workflow = {
-  state: 'INIT',
+  state:'INIT',
   context: {
     walletAddress: null,
     tonBalance: 0,
