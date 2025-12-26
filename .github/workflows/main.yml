@@ -1,171 +1,31 @@
-/* ===============================
-   LBH TELEGRAM MINI APP WORKFLOW
-   =============================== */
+name: Deploy LBH Telegram Mini App
 
-/*
-STATES
-------
-INIT
-NO_WALLET
-WALLET_CONNECTED
-ROLE_DETECTED
-TIER_ASSIGNED
-READY
-*/
+on:
+  push:
+    branches:
+      - main
 
-const Workflow = {
-  state:'INIT',
-  context: {
-    walletAddress: null,
-    tonBalance: 0,
-    lbhBalance: 0,
-    tier: 'None',
-    role: 'Worker'
-  }
-};
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-/* ===============================
-   STATE TRANSITIONS
-   =============================== */
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-function setState(newState) {
-  Workflow.state = newState;
-  console.log('[WORKFLOW]', newState);
-  renderByState();
-}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-/* ===============================
-   CORE LOGIC
-   =============================== */
+      - name: Install dependencies
+        run: npm install
+        working-directory: public
 
-function assignTier(lbh) {
-  if (lbh >= 100000) return 'Platinum';
-  if (lbh >= 50000) return 'Gold';
-  if (lbh >= 10000) return 'Silver';
-  if (lbh >= 1000) return 'Bronze';
-  return 'None';
-}
+      - name: Run workflow logic
+        run: node workflow.js
+        working-directory: public
 
-function detectRole(lbh) {
-  return lbh >= 1000 ? 'Builder' : 'Worker';
-}
-
-/* ===============================
-   WORKFLOW STEPS
-   =============================== */
-
-async function onWalletConnected(wallet) {
-  Workflow.context.walletAddress = wallet.account.address;
-  setState('WALLET_CONNECTED');
-
-  await loadOnchainData();
-}
-
-async function loadOnchainData() {
-  const addr = Workflow.context.walletAddress;
-
-  // TON balance
-  const acc = await fetch(`https://tonapi.io/v2/accounts/${addr}`).then(r => r.json());
-  Workflow.context.tonBalance = Number(acc.balance) / 1e9;
-
-  // Jettons
-  const jets = await fetch(`https://tonapi.io/v2/accounts/${addr}/jettons`).then(r => r.json());
-  const LBH_MASTER = 'EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c';
-
-  const lbhJetton = jets.balances.find(j => j.jetton.address === LBH_MASTER);
-  Workflow.context.lbhBalance = lbhJetton
-    ? Number(lbhJetton.balance) / 10 ** lbhJetton.jetton.decimals
-    : 0;
-
-  setState('ROLE_DETECTED');
-
-  Workflow.context.tier = assignTier(Workflow.context.lbhBalance);
-  Workflow.context.role = detectRole(Workflow.context.lbhBalance);
-
-  setState('TIER_ASSIGNED');
-  setState('READY');
-}
-
-/* ===============================
-   UI BINDINGS
-   =============================== */
-
-function renderByState() {
-  switch (Workflow.state) {
-    case 'INIT':
-      hideApp();
-      break;
-
-    case 'NO_WALLET':
-      showConnectWallet();
-      break;
-
-    case 'WALLET_CONNECTED':
-      showLoading();
-      break;
-
-    case 'ROLE_DETECTED':
-    case 'TIER_ASSIGNED':
-    case 'READY':
-      updateDashboard();
-      break;
-  }
-}
-
-function updateDashboard() {
-  document.getElementById('tonBalance').innerText =
-    Workflow.context.tonBalance.toFixed(2) + ' TON';
-
-  document.getElementById('lbhBalance').innerText =
-    Workflow.context.lbhBalance.toFixed(0) + ' LBH';
-
-  document.getElementById('discountTier').innerText =
-    Workflow.context.tier;
-
-  document.getElementById('userRole').innerText =
-    'Role: ' + Workflow.context.role;
-
-  toggleBuilderFeatures();
-}
-
-/* ===============================
-   FEATURE GATING
-   =============================== */
-
-function toggleBuilderFeatures() {
-  const isBuilder = Workflow.context.role === 'Builder';
-
-  document.querySelectorAll('[data-builder-only]').forEach(el => {
-    el.style.display = isBuilder ? 'block' : 'none';
-  });
-}
-
-/* ===============================
-   APP VISIBILITY
-   =============================== */
-
-function hideApp() {
-  document.body.style.opacity = 0;
-}
-
-function showLoading() {
-  document.body.style.opacity = 0.6;
-}
-
-function showConnectWallet() {
-  document.body.style.opacity = 1;
-}
-
-/* ===============================
-   BOOTSTRAP
-   =============================== */
-
-function startWorkflow() {
-  if (!window.wallet) {
-    setState('NO_WALLET');
-  } else {
-    onWalletConnected(window.wallet);
-  }
-}
-
-setTimeout(startWorkflow, 500);
+      - name: Build / Deploy
+        run: |
+          echo "Deploying LBH Mini App"
