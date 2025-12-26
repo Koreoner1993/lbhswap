@@ -1,0 +1,26 @@
+{
+  "name": "lbh-stonfi-swap",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ston-fi/api": "latest",
+    "@ston-fi/sdk": "latest",
+    "@tonconnect/ui-react": "latest",
+    "canvas-confetti": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "latest",
+    "@vitejs/plugin-react": "latest",
+    "tailwindcss": "latest",
+    "vite": "latest",
+    "vite-plugin-node-polyfills": "latest"
+  }
+}
