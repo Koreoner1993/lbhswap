@@ -1,9 +1,18 @@
-name: Deploy LBH Telegram Mini App
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches:
       - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -13,19 +22,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          node-version: 20
+          path: ./public
 
-      - name: Install dependencies
-        run: npm install
-        working-directory: public
-
-      - name: Run workflow logic
-        run: node workflow.js
-        working-directory: public
-
-      - name: Build / Deploy
-        run: |
-          echo "Deploying LBH Mini App"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
